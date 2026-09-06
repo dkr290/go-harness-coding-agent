@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	openai "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 
 	"github.com/dkr290/go-harness-coding-agent/config"
 )
@@ -45,10 +46,14 @@ func Run(client openai.Client) {
 		messages = append(messages, openai.UserMessage(userInput))
 
 		// 5. Call the model with the full conversation so far
-		resp, err := client.Chat.Completions.New(context.Background(), openai.ChatCompletionNewParams{
+		params := openai.ChatCompletionNewParams{
 			Model:    config.Model,
 			Messages: messages,
-		})
+		}
+		if !config.Thinking {
+			params.ReasoningEffort = shared.ReasoningEffortNone
+		}
+		resp, err := client.Chat.Completions.New(context.Background(), params)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "model error: %v\n", err)
 			continue
