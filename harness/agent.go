@@ -12,6 +12,7 @@ import (
 	"github.com/openai/openai-go/v3/shared"
 
 	"github.com/dkr290/go-harness-coding-agent/config"
+	"github.com/dkr290/go-harness-coding-agent/templates"
 )
 
 // Run runs the agent's conversation loop until the user quits.
@@ -22,6 +23,9 @@ func Run(client openai.Client) {
 	fmt.Println("Agent is ready. Type 'quit' or 'exit' to leave")
 
 	scanner := bufio.NewScanner(os.Stdin)
+
+	// The system message is added once, at the start of the conversation.
+	messages = append(messages, openai.SystemMessage(templates.SystemPrompt))
 
 	for {
 		// 1. Get user input
