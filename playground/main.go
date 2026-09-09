@@ -46,7 +46,7 @@ func readFile(args readFileArgs) (string, error) {
 
 func main() {
 	// ---------------------------------------------------------------------
-	// STEP B: RegisterToolTo(registry, description, fn)
+	// STEP B: RegisterTool(registry, description, fn)
 	// Behind this ONE call, registry.go does (lines 117-150):
 	//   1. line 121: reflect.TypeOf(t).Kind() -> panics unless T is a struct
 	//   2. line 126: funcName(fn) -> runtime.FuncForPC + reflect.ValueOf(fn)
@@ -57,7 +57,7 @@ func main() {
 	//                 readFileArgs before calling readFile
 	// ---------------------------------------------------------------------
 	r := tools.NewToolRegistry()
-	tools.RegisterToolTo(r, "Read the contents of a file", readFile)
+	tools.RegisterTool(r, "Read the contents of a file", readFile)
 
 	// ---------------------------------------------------------------------
 	// PRINT 1: The schema the LLM would see (GetSchemas, lines 41-64).

@@ -42,7 +42,7 @@ func fail(_ struct{}) (string, error) {
 
 func TestRegisterToolAndDispatch(t *testing.T) {
 	r := NewToolRegistry()
-	RegisterToolTo(r, "Greet someone", greet)
+	RegisterTool(r, "Greet someone", greet)
 
 	if got := r.Dispatch("greet", map[string]any{"name": "gopher"}); got != "hello, gopher" {
 		t.Errorf("dispatch = %q, want %q", got, "hello, gopher")
@@ -54,7 +54,7 @@ func TestRegisterToolAndDispatch(t *testing.T) {
 
 func TestDispatchErrors(t *testing.T) {
 	r := NewToolRegistry()
-	RegisterToolTo(r, "Always fails", fail)
+	RegisterTool(r, "Always fails", fail)
 
 	if got := r.Dispatch("missing", nil); !strings.Contains(got, "unknown tool 'missing'") {
 		t.Errorf("unknown tool: got %q", got)
@@ -66,7 +66,7 @@ func TestDispatchErrors(t *testing.T) {
 
 func TestGetSchemas(t *testing.T) {
 	r := NewToolRegistry()
-	RegisterToolTo(r, "Greet someone", greet)
+	RegisterTool(r, "Greet someone", greet)
 
 	schemas := r.GetSchemas()
 	if len(schemas) != 1 {
@@ -115,5 +115,5 @@ func TestRegisterToolRequiresStruct(t *testing.T) {
 		}
 	}()
 
-	RegisterToolTo(NewToolRegistry(), "bad", func(s string) (string, error) { return s, nil })
+	RegisterTool(NewToolRegistry(), "bad", func(s string) (string, error) { return s, nil })
 }

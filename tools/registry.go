@@ -96,8 +96,10 @@ var toolReflector = &jsonschema.Reflector{
 	AllowAdditionalProperties: false,
 }
 
-// RegisterTool registers fn as a tool in the global registry — the Go
-// equivalent of Python's @tool decorator.
+// RegisterTool registers fn as a tool in the given registry — the Go
+// equivalent of Python's @tool decorator. Real tools register into the global
+// Registry from init(); tests and other isolated setups pass their own
+// registry instead.
 //
 // Go has no decorators and cannot read doc comments at runtime, so the
 // description is passed explicitly and registration happens from init():
@@ -108,22 +110,16 @@ var toolReflector = &jsonschema.Reflector{
 //
 //	func readFile(args readFileArgs) (string, error) { ... }
 //
-//	func init() { RegisterTool("Read the contents of a file", readFile) }
+//	func init() { RegisterTool(Registry, "Read the contents of a file", readFile) }
 //
 // fn must have the signature func(T) (R, error), where T is a struct type
 // describing the tool's parameters. The tool's name is the function's name.
-func RegisterTool[T any, R any](description string, fn func(T) (R, error)) {
-	RegisterToolTo(Registry, description, fn)
-}
-
-// RegisterToolTo is like RegisterTool but registers into the given registry
-// instead of the global one — useful for tests and isolated registries.
-func RegisterToolTo[T any, R any](r *ToolRegistry, description string, fn func(T) (R, error)) {
+func RegisterTool[T any, R any](r *ToolRegistry, description string, fn func(T) (R, error)) {
 	// Validate that T is a struct type — schema generation and argument binding
 	// require a struct with json tags.
 	var t T
 	if reflect.TypeOf(t).Kind() != reflect.Struct {
-		panic(fmt.Sprintf("tools: RegisterToolTo requires a struct type for parameters, got %T", t))
+		panic(fmt.Sprintf("tools: RegisterTool requires a struct type for parameters, got %T", t))
 	}
 
 	// Step 1: extract metadata from the function itself.
