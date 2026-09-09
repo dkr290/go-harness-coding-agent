@@ -28,9 +28,12 @@ import (
 //   - rename the function readFile -> loadFile -> watch "name" change
 // ---------------------------------------------------------------------------
 type readFileArgs struct {
-	Path     string `json:"path" jsonschema:"description=Path to the file to read"`
-	MaxLines int    `json:"max_lines,omitempty" jsonschema:"description=Read at most this many lines"`
-	Shout    bool   `json:"shout,omitempty" jsonschema:"description=UPPERCASE the result"`
+	Path string `json:"path" jsonschema:"description=Path to the file to read"`
+	// minimum/maximum come from the jsonschema tag too — watch them appear in
+	// the generated schema. They are exactly the kind of integer constraints
+	// the json.RawMessage round-trip in schemaFor preserves byte-for-byte.
+	MaxLines int  `json:"max_lines,omitempty" jsonschema:"description=Read at most this many lines,minimum=1,maximum=500"`
+	Shout    bool `json:"shout,omitempty" jsonschema:"description=UPPERCASE the result"`
 }
 
 func readFile(args readFileArgs) (string, error) {
@@ -84,6 +87,12 @@ func main() {
 	fmt.Println(r.Dispatch("readFile", map[string]any{
 		"path":  "/etc/hostname",
 		"shout": true,
+	}))
+	// Note: max_lines=9999 violates maximum=500 from the schema, but Dispatch
+	// still runs — constraints are a hint for the LLM, NOT enforced locally.
+	fmt.Println(r.Dispatch("readFile", map[string]any{
+		"path":      "/etc/hostname",
+		"max_lines": 9999,
 	}))
 
 	// ---------------------------------------------------------------------

@@ -1,10 +1,27 @@
 package tools
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 )
+
+// decodeRaw unmarshals a schema value into a plain map. Since schemaFor
+// stores values as json.RawMessage (to preserve raw JSON), tests decode them
+// before asserting on their contents.
+func decodeRaw(t *testing.T, v any) map[string]any {
+	t.Helper()
+	raw, ok := v.(json.RawMessage)
+	if !ok {
+		t.Fatalf("expected json.RawMessage, got %T: %v", v, v)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatalf("cannot decode schema value: %v", err)
+	}
+	return out
+}
 
 type greetArgs struct {
 	Name  string `json:"name" jsonschema:"description=Who to greet"`
@@ -71,10 +88,8 @@ func TestGetSchemas(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing parameters: %v", fn)
 	}
-	props, ok := params["properties"].(map[string]any)
-	if !ok {
-		t.Fatalf("missing properties: %v", params)
-	}
+	// Decoding the properties RawMessage turns nested values into plain maps.
+	props := decodeRaw(t, params["properties"])
 	if props["name"].(map[string]any)["type"] != "string" {
 		t.Errorf("name should be a string: %v", props)
 	}
@@ -82,10 +97,13 @@ func TestGetSchemas(t *testing.T) {
 		t.Errorf("shout should be a boolean: %v", props)
 	}
 
-	// After schemaFor's JSON round-trip, required decodes as []any.
-	required, ok := params["required"].([]any)
-	if !ok || len(required) != 1 || required[0] != "name" {
-		t.Errorf("required should be [name] (omitempty marks shout optional): %v", params["required"])
+	// required is stored as json.RawMessage too; decode it into a slice.
+	var required []string
+	if err := json.Unmarshal(params["required"].(json.RawMessage), &required); err != nil {
+		t.Fatalf("cannot decode required: %v", err)
+	}
+	if len(required) != 1 || required[0] != "name" {
+		t.Errorf("required should be [name] (omitempty marks shout optional): %v", required)
 	}
 }
 

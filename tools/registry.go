@@ -86,10 +86,14 @@ var Registry = NewToolRegistry()
 // toolReflector is configured to emit the flat object schemas OpenAI's tools
 // format expects: no $id (Anonymous), the top-level struct inlined instead of
 // a $ref (ExpandedStruct), and no $defs section (DoNotReference).
+// AllowAdditionalProperties is set explicitly (as in OpenAI's structured
+// outputs example) — it is the library default for structs, but spelling it
+// out documents intent and is required if we ever enable strict tool calling.
 var toolReflector = &jsonschema.Reflector{
-	Anonymous:      true,
-	ExpandedStruct: true,
-	DoNotReference: true,
+	Anonymous:                 true,
+	ExpandedStruct:            true,
+	DoNotReference:            true,
+	AllowAdditionalProperties: false,
 }
 
 // RegisterTool registers fn as a tool in the global registry — the Go
@@ -192,9 +196,17 @@ func schemaFor[T any]() (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tools: cannot marshal schema for %T: %w", v, err)
 	}
-	var out map[string]any
-	if err := json.Unmarshal(raw, &out); err != nil {
+
+	// Decode into map[string]json.RawMessage (as in OpenAI's structured
+	// outputs example): values stay as raw JSON bytes so integer constraints
+	// are not rounded through float64 before the SDK serializes the request.
+	var rawSchema map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &rawSchema); err != nil {
 		return nil, fmt.Errorf("tools: cannot decode schema for %T: %w", v, err)
+	}
+	out := make(map[string]any, len(rawSchema))
+	for key, value := range rawSchema {
+		out[key] = value
 	}
 	return out, nil
 }
