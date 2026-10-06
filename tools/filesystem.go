@@ -10,6 +10,8 @@ import (
 
 // workspace is the directory all file tools are scoped to — "agent/workspace"
 // next to the running executable, not inside any package directory.
+
+
 type workspace struct {
 	root string
 }
@@ -39,24 +41,9 @@ func init() {
 }
 
 // Workspace is the single static workspace the file tools operate in,
-// rooted at "agent/workspace" under the app root.
-var Workspace = mustWorkspace(filepath.Join(appRoot(), "agent", "workspace"))
+// rooted at "/workspace" under the app root.
+var Workspace = mustWorkspace("./workspace")
 
-// appRoot returns the directory of the running executable — the root of the
-// app. This works for a compiled binary no matter where it is started from,
-// and does not depend on go.mod or the source tree existing.
-func appRoot() string {
-	exe, err := os.Executable()
-	if err != nil {
-		panic(fmt.Sprintf("tools: cannot locate executable: %v", err))
-	}
-	// Resolve symlinks (e.g. /usr/local/bin/app -> /opt/app/app) so the
-	// workspace sits next to the real binary.
-	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
-		exe = resolved
-	}
-	return filepath.Dir(exe)
-}
 
 func mustWorkspace(root string) *workspace {
 	ws, err := newWorkspace(root)
