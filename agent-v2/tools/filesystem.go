@@ -54,6 +54,9 @@ func newWorkspace(root string) (*workspace, error) {
 	if err := os.MkdirAll(abs, 0o755); err != nil {
 		return nil, fmt.Errorf("create workspace: %w", err)
 	}
+	if err := ensureGitRepo(abs); err != nil {
+		return nil, fmt.Errorf("initialize git: %w", err)
+	}
 	return &workspace{root: abs}, nil
 }
 
