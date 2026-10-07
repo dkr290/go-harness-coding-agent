@@ -24,9 +24,9 @@ func main() {
 			Instructions: templates.SystemPrompt,
 			Config: agent.Config{
 				Name:  "CodingAgent",
-				Tools: tools.FilesystemTools(),
+				Tools: append(tools.FilesystemTools(),tools.GitTools()...),
 			},
 		},
 	)
-	harness.Run(client,a)
+	harness.Run(client, a)
 }
