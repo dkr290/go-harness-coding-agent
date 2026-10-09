@@ -3,7 +3,9 @@ package tools
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/microsoft/agent-framework-go/tool"
@@ -135,11 +137,19 @@ func runGit(args ...string) (string, error) {
 //   - git config user.email agent@harness.local
 //   - git symbolic-ref HEAD refs/heads/main
 //
-// This is idempotent: if .git already exists, it is a no-op.
+// This is idempotent: if .git already exists inside the workspace, it is a no-op.
 func ensureGitRepo(root string) error {
-	// Check if a git repo already exists.
-	if exec.Command("git", "-C", root, "rev-parse", "--git-dir").Run() == nil {
-		return nil
+	// Check if a git repo already exists inside this specific directory.
+	// Use git rev-parse --is-inside-work-tree with -C to avoid walking up
+	// the directory tree and matching a parent repo.
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	cmd.Dir = root
+	if err := cmd.Run(); err == nil {
+		// Already inside a work tree — but we need to confirm it's THIS
+		// directory's .git, not a parent's. Check for .git at the root.
+		if _, err := os.Stat(filepath.Join(root, ".git")); err == nil {
+			return nil
+		}
 	}
 
 	cmds := [][]string{

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/microsoft/agent-framework-go/agent"
 	"github.com/microsoft/agent-framework-go/provider/openaiprovider"
 	openai "github.com/openai/openai-go/v3"
@@ -13,6 +16,13 @@ import (
 )
 
 func main() {
+	// Initialize the workspace (creates directory and git repo if needed)
+	// so that git is ready before any tool is invoked.
+	if err := tools.InitializeWorkspace(); err != nil {
+		fmt.Fprintf(os.Stderr, "cannot initialize workspace: %v\n", err)
+		os.Exit(1)
+	}
+
 	client := openai.NewClient(
 		option.WithAPIKey(config.APIKey),
 		option.WithBaseURL(config.BaseURL),
@@ -24,7 +34,7 @@ func main() {
 			Instructions: templates.SystemPrompt,
 			Config: agent.Config{
 				Name:  "CodingAgent",
-				Tools: append(tools.FilesystemTools(),tools.GitTools()...),
+				Tools: append(tools.FilesystemTools(), tools.GitTools()...),
 			},
 		},
 	)

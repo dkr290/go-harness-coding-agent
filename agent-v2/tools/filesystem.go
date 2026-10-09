@@ -15,62 +15,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/microsoft/agent-framework-go/tool"
 	"github.com/microsoft/agent-framework-go/tool/functool"
 )
-
-// workspace is the directory all file tools are scoped to.
-type workspace struct {
-	root string
-}
-
-var (
-	workspaceOnce sync.Once
-	workspaceInst *workspace
-)
-
-// Workspace is the single static workspace the file tools operate in, rooted
-// at "./workspace" under the process working directory. It is resolved on
-// first use (after flag parsing) rather than from init(), so tests and
-// embedding binaries control their own working directory first.
-func Workspace() *workspace {
-	workspaceOnce.Do(func() {
-		ws, err := newWorkspace("./workspace")
-		if err != nil {
-			panic(fmt.Sprintf("tools: cannot initialize workspace: %v", err))
-		}
-		workspaceInst = ws
-	})
-	return workspaceInst
-}
-
-func newWorkspace(root string) (*workspace, error) {
-	abs, err := filepath.Abs(root)
-	if err != nil {
-		return nil, fmt.Errorf("resolve workspace: %w", err)
-	}
-	if err := os.MkdirAll(abs, 0o755); err != nil {
-		return nil, fmt.Errorf("create workspace: %w", err)
-	}
-	if err := ensureGitRepo(abs); err != nil {
-		return nil, fmt.Errorf("initialize git: %w", err)
-	}
-	return &workspace{root: abs}, nil
-}
-
-// resolve validates a relative path; os.Root enforces containment at use time,
-// including symlinks and concurrent path changes.
-func (w *workspace) resolve(p string) (string, error) {
-	if p == "" {
-		return "", fmt.Errorf("path must not be empty")
-	}
-	if !filepath.IsLocal(p) {
-		return "", fmt.Errorf("path escapes workspace: %q", p)
-	}
-	return filepath.Clean(p), nil
-}
 
 // FilesystemTools returns the workspace file tools, ready to hand to the
 // agent's Config.Tools list.
