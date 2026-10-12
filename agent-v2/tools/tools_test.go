@@ -2,10 +2,14 @@ package tools
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/microsoft/agent-framework-go/tool"
+
+	"github.com/dkr290/go-harness-coding-agent/agent-v2/templates"
 )
 
 // findTool returns the FuncTool with the given name, or fails.
@@ -67,6 +71,42 @@ func TestWriteThenReadFile(t *testing.T) {
 
 	if _, err := findTool(t, "deleteFile").Call(ctx, `{"path": "test/hello.txt"}`); err != nil {
 		t.Fatalf("deleteFile: %v", err)
+	}
+}
+
+// TestAgentsMDSeeded verifies a fresh workspace gets AGENTS.md seeded from the
+// embedded template.
+func TestAgentsMDSeeded(t *testing.T) {
+	root := t.TempDir()
+	if _, err := newWorkspace(root); err != nil {
+		t.Fatalf("newWorkspace: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read seeded AGENTS.md: %v", err)
+	}
+	if string(got) != templates.AgentsMD {
+		t.Errorf("seeded AGENTS.md does not match the embedded template")
+	}
+}
+
+// TestAgentsMDNotOverwritten verifies an existing AGENTS.md is preserved, so
+// the agent's memory survives across sessions.
+func TestAgentsMDNotOverwritten(t *testing.T) {
+	root := t.TempDir()
+	custom := "# My memory\n\nDo not overwrite me."
+	if err := os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte(custom), 0o644); err != nil {
+		t.Fatalf("write custom AGENTS.md: %v", err)
+	}
+	if _, err := newWorkspace(root); err != nil {
+		t.Fatalf("newWorkspace: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
+	}
+	if string(got) != custom {
+		t.Errorf("AGENTS.md was overwritten, got: %q", got)
 	}
 }
 

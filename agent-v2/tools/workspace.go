@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/dkr290/go-harness-coding-agent/agent-v2/templates"
 )
 
 // workspace is the directory all file tools are scoped to.
@@ -79,6 +81,9 @@ func newWorkspace(root string) (*workspace, error) {
 	if err := ensureGitRepo(abs); err != nil {
 		return nil, fmt.Errorf("initialize git: %w", err)
 	}
+	if err := ensureAgentsMd(abs); err != nil {
+		return nil, fmt.Errorf("seed AGENTS.md: %w", err)
+	}
 	return &workspace{root: abs}, nil
 }
 
@@ -92,4 +97,18 @@ func (w *workspace) resolve(p string) (string, error) {
 		return "", fmt.Errorf("path escapes workspace: %q", p)
 	}
 	return filepath.Clean(p), nil
+}
+
+// ensureAgentsMd seeds the workspace with the embedded AGENTS.md template if
+// the file does not already exist. It is idempotent: an existing AGENTS.md —
+// including one the agent has updated in a previous session — is never
+// overwritten.
+func ensureAgentsMd(root string) error {
+	path := filepath.Join(root, "AGENTS.md")
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return os.WriteFile(path, []byte(templates.AgentsMD), 0o644)
 }

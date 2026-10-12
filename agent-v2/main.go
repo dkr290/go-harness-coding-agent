@@ -31,7 +31,7 @@ func main() {
 		client,
 		openaiprovider.AgentConfig{
 			Model:        config.Model,
-			Instructions: templates.SystemPrompt,
+			Instructions: templates.SystemPrompt + templates.AgentsMD,
 			Config: agent.Config{
 				Name:  "CodingAgent",
 				Tools: append(tools.FilesystemTools(), tools.GitTools()...),

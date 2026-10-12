@@ -1,13 +1,13 @@
 // Package templates provides access to the embedded prompt templates.
 //
-// Every *.txt file in this directory is embedded into the binary at compile
+// Every *.txt or *.md file in this directory is embedded into the binary at compile
 // time automatically. However, to use a template from code (e.g. from the
 // harness package), you MUST add a package-level variable for it below —
 // dropping the file in is not enough on its own.
 //
 // How to add a new template, step by step:
 //
-//  1. Drop the file in this directory, e.g. file.1.txt
+//  1. Drop the file in this directory, e.g. file.1.txt or md file
 //  2. Add a variable in the var block below:  var File1 = MustGet("file.1.txt")
 //  3. Reference it from code as:  templates.File1
 //
@@ -22,7 +22,7 @@ import (
 
 // files holds every *.txt template in this directory.
 //
-//go:embed *.txt
+//go:embed *.txt *.md
 var files embed.FS
 
 // Template variables — one per embedded file the program uses.
@@ -37,6 +37,7 @@ var files embed.FS
 var (
 	// SystemPrompt is the agent's system prompt (system.prompt.txt).
 	SystemPrompt = MustGet("system.prompt.txt")
+	AgentsMD = MustGet("AGENTS.md")
 
 	// Add new templates below, one per file:
 	// File1 = MustGet("file.1.txt")
