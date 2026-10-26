@@ -34,7 +34,7 @@ func main() {
 			Instructions: templates.SystemPrompt + templates.AgentsMD,
 			Config: agent.Config{
 				Name:  "CodingAgent",
-				Tools: append(tools.FilesystemTools(), tools.GitTools()...),
+				Tools: append(append(tools.FilesystemTools(), tools.GitTools()...), tools.BashTool()...),
 			},
 		},
 	)
