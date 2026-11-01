@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 
@@ -87,13 +88,7 @@ func bashCommand(ctx context.Context, args bashCommandArgs) (string, error) {
 }
 
 // isAllowed checks whether the given command name is in the allowlist.
+
 func isAllowed(command string) bool {
-	for _, allowed := range config.BashAllowlist {
-		if allowed == command {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(config.BashAllowlist, command)
 }
-
-
