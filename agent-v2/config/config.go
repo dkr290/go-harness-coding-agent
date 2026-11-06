@@ -2,20 +2,23 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 )
 
 const (
-	DefaultModel   = "gpt-4o-mini"
-	DefaultBaseURL = "https://api.openai.com/v1"
+	DefaultModel      = "gpt-4o-mini"
+	DefaultBaseURL    = "https://api.openai.com/v1"
+	DefaultStepBudget = 25
 )
 
 var (
-	APIKey   = envOrDefault("OPENAI_API_KEY", "")
-	Model    = envOrDefault("OPENAI_MODEL", DefaultModel)
-	BaseURL  = envOrDefault("OPENAI_BASE_URL", DefaultBaseURL)
-	Thinking = envBool("OPENAI_THINKING", true)
+	APIKey        = envOrDefault("OPENAI_API_KEY", "")
+	Model         = envOrDefault("OPENAI_MODEL", DefaultModel)
+	BaseURL       = envOrDefault("OPENAI_BASE_URL", DefaultBaseURL)
+	Thinking      = envBool("OPENAI_THINKING", true)
 	BashAllowlist = getBashAllowlist()
+	StepBudget    = envInt("STEP_BUDGET", DefaultStepBudget)
 )
 
 func getBashAllowlist() []string {
@@ -79,4 +82,16 @@ func envBool(key string, fallback bool) bool {
 		return false
 	}
 	return fallback
+}
+
+func envInt(key string, fallback int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 1 {
+		return fallback
+	}
+	return n
 }

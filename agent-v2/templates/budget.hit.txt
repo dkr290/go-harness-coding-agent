@@ -1,0 +1,9 @@
+You've reached the step budget for this turn (%d tool calls). Do not make
+any more tool calls. Instead, respond directly to the user with:
+
+1. What you accomplished in this turn.
+2. What remains to be done.
+3. What the user should ask next to continue the work.
+
+Your response will be the final message for this turn. The user will
+reply to it and you can continue from there.

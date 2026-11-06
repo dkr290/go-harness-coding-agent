@@ -39,6 +39,12 @@ var (
 	SystemPrompt = MustGet("system.prompt.txt")
 	AgentsMD = MustGet("AGENTS.md")
 
+	// BudgetHit is injected as a user message when the step budget is
+	// exhausted, telling the model why it must stop and what shape its
+	// final response should take (budget.hit.txt). It contains a single
+	// %d verb for the budget.
+	BudgetHit = MustGet("budget.hit.txt")
+
 	// Add new templates below, one per file:
 	// File1 = MustGet("file.1.txt")
 )

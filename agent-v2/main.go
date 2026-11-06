@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/microsoft/agent-framework-go/agent"
+	"github.com/microsoft/agent-framework-go/agent/harness/toolautocall"
 	"github.com/microsoft/agent-framework-go/provider/openaiprovider"
 	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -32,6 +33,14 @@ func main() {
 		openaiprovider.AgentConfig{
 			Model:        config.Model,
 			Instructions: templates.SystemPrompt + templates.AgentsMD,
+			// Step budget: cap the tool-call loop at StepBudget-1 rounds per
+			// user turn so the harness's budget-hit run (which forces a
+			// tool-less summary) is the StepBudget-th and final model call.
+			// The framework strips tool declarations on the last iteration,
+			// so the model cannot exceed the budget even if it tries.
+			ToolAutoCall: &toolautocall.Config{
+				MaximumIterationsPerRequest: new(config.StepBudget - 1),
+			},
 			Config: agent.Config{
 				Name:  "CodingAgent",
 				Tools: append(append(tools.FilesystemTools(), tools.GitTools()...), tools.BashTool()...),
