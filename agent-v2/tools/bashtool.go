@@ -22,28 +22,32 @@ const defaultBashTimeout = 30
 func BashTool() []tool.Tool {
 	return []tool.Tool{
 		functool.MustNew(functool.Config{
-			Name:        "bash",
-			Description: "Execute an allowed command inside the workspace. The command must be in the allowlist. Optional arguments and a timeout (in seconds) can be provided. Defaults to 30s timeout.",
+			Name: "bash",
+			Description: "Execute a shell command inside the workspace via sh -c. " +
+				"Commands may be chained with &&, ||, ; or |. Every command in the chain " +
+				"must be permitted: denied commands are always rejected, and unless all " +
+				"commands are allowed, each command must be in the allowlist. " +
+				"Optional timeout (in seconds); defaults to 30s.",
 		}, bashCommand),
 	}
 }
 
 type bashCommandArgs struct {
-	Command string   `json:"command" jsonschema:"The binary name to execute; must be in the allowlist"`
-	Args    []string `json:"args,omitempty" jsonschema:"Arguments to pass to the command"`
-	Timeout int      `json:"timeout,omitempty" jsonschema:"Timeout in seconds; defaults to 30"`
+	Command string `json:"command" jsonschema:"The shell command line to execute; may chain commands with &&, ||, ; or |"`
+	Timeout int    `json:"timeout,omitempty" jsonschema:"Timeout in seconds; defaults to 30"`
 }
 
-// bashCommand executes an allowed command inside the workspace with a timeout.
+// bashCommand executes a permitted command line inside the workspace with a
+// timeout.
 func bashCommand(ctx context.Context, args bashCommandArgs) (string, error) {
 	// Validate command is non-empty.
-	if args.Command == "" {
+	if strings.TrimSpace(args.Command) == "" {
 		return "", fmt.Errorf("command is required")
 	}
 
-	// Validate command is in the allowlist.
-	if !isAllowed(args.Command) {
-		return "", fmt.Errorf("command not allowed: %s", args.Command)
+	// Validate every command in the chain against the deny/allow lists.
+	if err := validateCommand(args.Command); err != nil {
+		return "", err
 	}
 
 	// Apply timeout.
@@ -54,7 +58,7 @@ func bashCommand(ctx context.Context, args bashCommandArgs) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, args.Command, args.Args...)
+	cmd := exec.CommandContext(ctx, "sh", "-c", args.Command)
 	cmd.Dir = Workspace().root
 
 	var stdout, stderr strings.Builder
@@ -87,8 +91,90 @@ func bashCommand(ctx context.Context, args bashCommandArgs) (string, error) {
 	return output, nil
 }
 
-// isAllowed checks whether the given command name is in the allowlist.
+// validateCommand splits a command line on the chain separators &&, ||, ;
+// and |, then validates the binary of every segment. All segments must pass
+// for the command to run.
+func validateCommand(command string) error {
+	for _, segment := range splitChain(command) {
+		bin := firstToken(segment)
+		if bin == "" {
+			continue
+		}
+		if err := validateBinary(bin); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-func isAllowed(command string) bool {
-	return slices.Contains(config.BashAllowlist, command)
+// validateBinary checks one binary against the deny and allow lists. The
+// deny list always wins: a binary in both lists is rejected. When
+// ALLOW_ALL_COMMANDS is set or the allowlist is empty, every non-denied
+// binary is permitted.
+func validateBinary(bin string) error {
+	if slices.Contains(config.BashDenylist, bin) {
+		return fmt.Errorf("command denied: %s", bin)
+	}
+	if config.BashAllowAll || len(config.BashAllowlist) == 0 {
+		return nil
+	}
+	if !slices.Contains(config.BashAllowlist, bin) {
+		return fmt.Errorf("command not allowed: %s", bin)
+	}
+	return nil
+}
+
+// splitChain splits a command line on the shell chain separators &&, ||, ;
+// and |. Separators inside single or double quotes are ignored.
+func splitChain(command string) []string {
+	var segments []string
+	var current strings.Builder
+	var quote rune // 0, '\'' or '"'
+
+	runes := []rune(command)
+	for i := 0; i < len(runes); i++ {
+		c := runes[i]
+		if quote != 0 {
+			current.WriteRune(c)
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '\'', '"':
+			quote = c
+			current.WriteRune(c)
+		case ';':
+			segments = append(segments, current.String())
+			current.Reset()
+		case '&', '|':
+			if i+1 < len(runes) && runes[i+1] == c {
+				// && or ||
+				segments = append(segments, current.String())
+				current.Reset()
+				i++
+			} else if c == '|' {
+				segments = append(segments, current.String())
+				current.Reset()
+			} else {
+				// A lone & (background) is kept as-is.
+				current.WriteRune(c)
+			}
+		default:
+			current.WriteRune(c)
+		}
+	}
+	segments = append(segments, current.String())
+	return segments
+}
+
+// firstToken returns the first whitespace-separated token of a chain
+// segment — the binary name to validate.
+func firstToken(segment string) string {
+	fields := strings.Fields(segment)
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
 }

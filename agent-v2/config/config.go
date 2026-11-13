@@ -18,20 +18,30 @@ var (
 	BaseURL       = envOrDefault("OPENAI_BASE_URL", DefaultBaseURL)
 	Thinking      = envBool("OPENAI_THINKING", true)
 	BashAllowlist = getBashAllowlist()
+	BashDenylist  = getBashDenylist()
+	BashAllowAll  = envBool("ALLOW_ALL_COMMANDS", false)
 	StepBudget    = envInt("STEP_BUDGET", DefaultStepBudget)
 )
 
-func getBashAllowlist() []string {
-	v := os.Getenv("BASH_ALLOWLIST")
-	if v != "" {
-		// User-provided comma-separated list.
-		list := make([]string, 0)
-		for _, cmd := range strings.Split(v, ",") {
-			cmd = strings.TrimSpace(cmd)
-			if cmd != "" {
-				list = append(list, cmd)
-			}
+// getListEnv parses a comma-separated environment variable into a trimmed,
+// non-empty list. It returns an empty slice when the variable is unset.
+func getListEnv(key string) []string {
+	v := os.Getenv(key)
+	list := make([]string, 0)
+	if v == "" {
+		return list
+	}
+	for _, cmd := range strings.Split(v, ",") {
+		cmd = strings.TrimSpace(cmd)
+		if cmd != "" {
+			list = append(list, cmd)
 		}
+	}
+	return list
+}
+
+func getBashAllowlist() []string {
+	if list := getListEnv("BASH_ALLOWLIST"); len(list) > 0 {
 		return list
 	}
 	// Default allowlist.
@@ -61,6 +71,17 @@ func getBashAllowlist() []string {
 		// Package managers
 		"apt-get", "apt", "apk",
 	}
+}
+
+// getBashDenylist returns the user-provided deny list, or the default deny
+// list when BASH_DENYLIST is unset. Denied commands are always rejected,
+// even if they also appear in the allowlist.
+func getBashDenylist() []string {
+	if list := getListEnv("BASH_DENYLIST"); len(list) > 0 {
+		return list
+	}
+	// Default denylist.
+	return []string{"rm", "sudo", "dd", "mkfs"}
 }
 
 func envOrDefault(key, fallback string) string {
