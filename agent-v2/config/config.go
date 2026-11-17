@@ -61,12 +61,12 @@ func getBashAllowlist() []string {
 		"git",
 		// System info
 		"uname", "whoami", "hostname", "uptime",
-		"df", "free", "ps", "top",
+		"df", "free", "ps", "top", "which",
 		// Networking
 		"curl", "wget", "ping", "nslookup", "dig",
 		// Programming
 		"go", "python", "python3", "node",
-		"npm", "yarn", "pip",
+		"npm", "yarn", "pip", "pip3",
 		"gcc", "make", "cmake",
 		// Package managers
 		"apt-get", "apt", "apk",
