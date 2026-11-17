@@ -1,4 +1,4 @@
-module github.com/dkr290/go-harness-coding-agent/agent-v2
+module github.com/dkr290/go-harness-coding-agent
 
 go 1.26.5
 

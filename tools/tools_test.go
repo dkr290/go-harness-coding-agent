@@ -9,7 +9,7 @@ import (
 
 	"github.com/microsoft/agent-framework-go/tool"
 
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/templates"
+	"github.com/dkr290/go-harness-coding-agent/templates"
 )
 
 // findTool returns the FuncTool with the given name, or fails.

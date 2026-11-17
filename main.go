@@ -10,10 +10,10 @@ import (
 	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/config"
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/harness"
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/templates"
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/tools"
+	"github.com/dkr290/go-harness-coding-agent/config"
+	"github.com/dkr290/go-harness-coding-agent/harness"
+	"github.com/dkr290/go-harness-coding-agent/templates"
+	"github.com/dkr290/go-harness-coding-agent/tools"
 )
 
 func main() {

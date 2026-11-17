@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/templates"
+	"github.com/dkr290/go-harness-coding-agent/templates"
 )
 
 // workspace is the directory all file tools are scoped to.

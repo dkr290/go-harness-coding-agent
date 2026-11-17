@@ -11,7 +11,7 @@ import (
 	"github.com/microsoft/agent-framework-go/tool"
 	"github.com/microsoft/agent-framework-go/tool/functool"
 
-	"github.com/dkr290/go-harness-coding-agent/agent-v2/config"
+	"github.com/dkr290/go-harness-coding-agent/config"
 )
 
 // Default timeout for bash commands in seconds.
