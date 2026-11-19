@@ -14,9 +14,6 @@ import (
 	"github.com/dkr290/go-harness-coding-agent/config"
 )
 
-// Default timeout for bash commands in seconds.
-const defaultBashTimeout = 30
-
 // BashTool returns the bash shell tool, ready to hand to the agent's
 // Config.Tools list.
 func BashTool() []tool.Tool {
@@ -53,7 +50,7 @@ func bashCommand(ctx context.Context, args bashCommandArgs) (string, error) {
 	// Apply timeout.
 	timeout := args.Timeout
 	if timeout <= 0 {
-		timeout = defaultBashTimeout
+		timeout = config.DefaultBashTimeout
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
