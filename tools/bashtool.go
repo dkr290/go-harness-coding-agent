@@ -3,7 +3,6 @@ package tools
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"slices"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/microsoft/agent-framework-go/tool/functool"
 
 	"github.com/dkr290/go-harness-coding-agent/config"
+	"github.com/dkr290/go-harness-coding-agent/sandbox"
 )
 
 // BashTool returns the bash shell tool, ready to hand to the agent's
@@ -20,7 +20,7 @@ func BashTool() []tool.Tool {
 	return []tool.Tool{
 		functool.MustNew(functool.Config{
 			Name: "bash",
-			Description: "Execute a shell command inside the workspace via sh -c. " +
+			Description: "Execute a shell command inside the workspace via bash, run inside the sandbox Docker container. " +
 				"Commands may be chained with &&, ||, ; or |. Every command in the chain " +
 				"must be permitted: denied commands are always rejected, and unless all " +
 				"commands are allowed, each command must be in the allowlist. " +
@@ -55,33 +55,33 @@ func bashCommand(ctx context.Context, args bashCommandArgs) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "sh", "-c", args.Command)
-	cmd.Dir = Workspace().root
-
-	var stdout, stderr strings.Builder
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	// Context timeout: return a structured message so the model can retry.
-	if err != nil && ctx.Err() == context.DeadlineExceeded {
-		return fmt.Sprintf("command timed out after %ds", timeout), nil
+	// Run the command through the module-level sandbox. The bash tool stays
+	// Docker-unaware; the sandbox owns the container and the execution.
+	executor := sandbox.Get()
+	if executor == nil {
+		return "", fmt.Errorf("bash: no sandbox set: cannot execute command %q", args.Command)
 	}
 
-	// Non-zero exit: return exit code and output to the model.
+	exitCode, stdout, stderr, err := executor.Execute(ctx, args.Command, timeout)
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			output := stdout.String()
-			if output == "" {
-				output = "no output"
-			}
-			return fmt.Sprintf("exit code: %d\nstdout: %s\nstderr: %s",
-				exitErr.ExitCode(), output, stderr.String()), nil
+		// Context timeout: return a structured message so the model can retry.
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Sprintf("command timed out after %ds", timeout), nil
 		}
 		return "", fmt.Errorf("error executing command: %s, %w", args.Command, err)
 	}
 
-	output := stdout.String()
+	// Non-zero exit: return exit code and output to the model.
+	if exitCode != 0 {
+		output := stdout
+		if output == "" {
+			output = "no output"
+		}
+		return fmt.Sprintf("exit code: %d\nstdout: %s\nstderr: %s",
+			exitCode, output, stderr), nil
+	}
+
+	output := stdout
 	if output == "" {
 		return "no output", nil
 	}

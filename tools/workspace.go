@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/dkr290/go-harness-coding-agent/config"
 	"github.com/dkr290/go-harness-coding-agent/templates"
 )
 
@@ -33,7 +34,7 @@ var (
 func InitializeWorkspace() error {
 	var err error
 	workspaceOnce.Do(func() {
-		ws, e := newWorkspace("./workspace")
+		ws, e := newWorkspace(config.WorkspacePath)
 		if e != nil {
 			err = fmt.Errorf("tools: cannot initialize workspace: %w", e)
 			return
@@ -49,13 +50,19 @@ func InitializeWorkspace() error {
 // embedding binaries control their own working directory first.
 func Workspace() *workspace {
 	workspaceOnce.Do(func() {
-		ws, e := newWorkspace("./workspace")
+		ws, e := newWorkspace(config.WorkspacePath)
 		if e != nil {
 			panic(fmt.Sprintf("tools: cannot initialize workspace: %v", e))
 		}
 		workspaceInst = ws
 	})
 	return workspaceInst
+}
+
+// Root returns the absolute path of the workspace root that all file tools
+// are scoped to.
+func (w *workspace) Root() string {
+	return w.root
 }
 
 // Resolve validates that the workspace is initialized and the workspace
