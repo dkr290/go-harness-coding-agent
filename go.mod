@@ -3,7 +3,7 @@ module github.com/dkr290/go-harness-coding-agent
 go 1.26.5
 
 require (
-	github.com/microsoft/agent-framework-go v0.3.0
+	github.com/microsoft/agent-framework-go v0.3.1
 	github.com/openai/openai-go/v3 v3.90.0
 )
 
@@ -16,3 +16,4 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 )
+ 
