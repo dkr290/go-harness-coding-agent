@@ -10,6 +10,8 @@ const (
 	DefaultModel      = "gpt-4o-mini"
 	DefaultBaseURL    = "https://api.openai.com/v1"
 	DefaultStepBudget = 25
+	// Default timeout for bash commands in seconds.
+	DefaultBashTimeout = 30
 )
 
 var (
