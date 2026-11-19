@@ -43,11 +43,22 @@ func GitTools() []tool.Tool {
 }
 
 // gitStatus returns the output of `git status` inside the workspace.
-func gitStatus(_ context.Context, _ struct{}) (string, error) {
+// gitStatusArgs takes no user-facing parameters; the optional field exists so
+// the generated JSON schema is a valid object with a "properties" entry, which
+// LM Studio requires (it rejects object schemas without one).
+type gitStatusArgs struct {
+	Disabled bool `json:"disabled,omitempty" jsonschema:"Disabled"`
+}
+
+func gitStatus(_ context.Context, _ gitStatusArgs) (string, error) {
 	return runGit("status")
 }
 
-func gitDiff(_ context.Context, _ struct{}) (string, error) {
+type gitDiffArgs struct {
+	Disabled bool `json:"disabled,omitempty" jsonschema:"Disabled"`
+}
+
+func gitDiff(_ context.Context, _ gitDiffArgs) (string, error) {
 	return runGit("diff")
 }
 

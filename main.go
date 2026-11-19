@@ -12,6 +12,7 @@ import (
 
 	"github.com/dkr290/go-harness-coding-agent/config"
 	"github.com/dkr290/go-harness-coding-agent/harness"
+	"github.com/dkr290/go-harness-coding-agent/sandbox"
 	"github.com/dkr290/go-harness-coding-agent/templates"
 	"github.com/dkr290/go-harness-coding-agent/tools"
 )
@@ -23,6 +24,20 @@ func main() {
 		fmt.Fprintf(os.Stderr, "cannot initialize workspace: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Create and start the sandbox Docker container that the bash tool runs
+	// commands inside. Fails hard when the Docker daemon is not reachable.
+	sb, err := sandbox.New(tools.Workspace().Root())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot create sandbox: %v\n", err)
+		os.Exit(1)
+	}
+	if err := sb.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "cannot start sandbox: %v\n", err)
+		_ = sb.Stop()
+		os.Exit(1)
+	}
+	sandbox.Set(sb)
 
 	client := openai.NewClient(
 		option.WithAPIKey(config.APIKey),
@@ -48,4 +63,10 @@ func main() {
 		},
 	)
 	harness.Run(client, a)
+
+	// Clean up the sandbox container when the agent session ends so we do not
+	// leak containers across sessions.
+	if err := sb.Stop(); err != nil {
+		fmt.Fprintf(os.Stderr, "sandbox stop: %v\n", err)
+	}
 }

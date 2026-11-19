@@ -12,6 +12,8 @@ const (
 	DefaultStepBudget = 25
 	// Default timeout for bash commands in seconds.
 	DefaultBashTimeout = 30
+	// Default timeout for sandbox container startup in seconds.
+	DefaultSandboxStartupTimeout = 30
 )
 
 var (
@@ -23,6 +25,18 @@ var (
 	BashDenylist  = getBashDenylist()
 	BashAllowAll  = envBool("ALLOW_ALL_COMMANDS", false)
 	StepBudget    = envInt("STEP_BUDGET", DefaultStepBudget)
+
+	// Sandbox container configuration. The sandbox runs agent shell commands
+	// inside a Docker container; the bash tool stays Docker-unaware and goes
+	// through the sandbox instead of executing on the host.
+	SandboxImage           = envOrDefault("SANDBOX_IMAGE", "docker.io/library/ubuntu:26.04")
+	SandboxWorkspacePath   = envOrDefault("SANDBOX_WORKSPACE_PATH", "/workspace")
+	SandboxStartupTimeout  = envInt("SANDBOX_STARTUP_TIMEOUT", DefaultSandboxStartupTimeout)
+	SandboxContainerPrefix = envOrDefault("SANDBOX_CONTAINER_PREFIX", "agent-harness-")
+
+	// WorkspacePath is the host-side workspace directory that the file tools
+	// and the sandbox bind-mount operate on. Defaults to "./workspace".
+	WorkspacePath = envOrDefault("WORKSPACE_PATH", "./workspace")
 )
 
 // getListEnv parses a comma-separated environment variable into a trimmed,

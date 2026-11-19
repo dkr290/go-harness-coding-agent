@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dkr290/go-harness-coding-agent/config"
+	"github.com/dkr290/go-harness-coding-agent/sandbox"
 )
 
 // withBashConfig overrides the global bash allow/deny configuration for the
@@ -142,11 +143,26 @@ func TestValidateCommandChains(t *testing.T) {
 	}
 }
 
+// fakeSandbox is a test Executor that returns canned execution results.
+type fakeSandbox struct {
+	exitCode int
+	stdout   string
+	stderr   string
+	err      error
+}
+
+func (f *fakeSandbox) Execute(ctx context.Context, command string, timeoutSeconds int) (int, string, string, error) {
+	return f.exitCode, f.stdout, f.stderr, f.err
+}
+
 // TestBashCommandEndToEnd runs permitted and rejected commands through the
 // real tool handler against the real workspace.
 func TestBashCommandEndToEnd(t *testing.T) {
 	withBashConfig(t, []string{"echo"}, []string{"ls"}, false)
 	ctx := context.Background()
+
+	sandbox.Set(&fakeSandbox{exitCode: 0, stdout: "hello\nworld"})
+	t.Cleanup(func() { sandbox.Set(nil) })
 
 	out, err := bashCommand(ctx, bashCommandArgs{Command: "echo hello && echo world"})
 	if err != nil {
